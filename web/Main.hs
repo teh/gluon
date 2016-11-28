@@ -6,8 +6,10 @@ import GI.Gtk hiding (main)
 import qualified GI.Gtk as Gtk
 import qualified GI.GLib as GLib
 import GI.WebKit2
+import GI.Gio (memoryInputStreamNewFromData)
 
 import System.Environment (getProgName)
+
 
 main :: IO ()
 main = do
@@ -29,8 +31,18 @@ main = do
 
   view <- new WebView []
 
+  -- register haskell scheme
+  context <- webContextGetDefault
+  webContextRegisterUriScheme context "haskell" $ \request -> do
+    path <- uRISchemeRequestGetUri request
+    ret <- memoryInputStreamNewFromData "" Nothing
+    print path
+    uRISchemeRequestFinish request ret 14 (Just "text/html")
+
   #add win view
-  #loadHtml view "" Nothing -- necessary otherwise frame is empty
+  #loadUri view "haskell://test"
+
 
   #showAll win
+
   Gtk.main

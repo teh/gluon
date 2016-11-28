@@ -12,7 +12,7 @@ executable web
   hs-source-dirs:
       web
   default-extensions: GeneralizedNewtypeDeriving MonadFailDesugaring NamedFieldPuns NoImplicitPrelude OverloadedStrings RecordWildCards
-  ghc-options: -Wall
+  ghc-options: -Wall  -threaded
   build-depends:
       gi-webkit2
     , gi-webkit2webextension
@@ -29,9 +29,10 @@ executable web
 executable plugin
   default-language: Haskell2010
   main-is: TestPlugin.hs
-  -- Note that -lHSrts-ghc8.0.1 needs to go here instead of extra-libraries.
+  -- Note that -lHSrts_thr-ghc8.0.1 needs to go here instead of extra-libraries.
   -- Probably fixed by https://github.com/haskell/cabal/pull/4043
-  ghc-options: -Wall -dynamic -shared -optc-O -fPIC -lHSrts-ghc8.0.1
+  -- (_thr stands for threads)
+  ghc-options: -Wall -dynamic -shared -optc-O -fPIC -lHSrts_thr-ghc8.0.1
   C-sources: plugin/cbits/test.c
   pkgconfig-depends: webkit2gtk-4.0
   hs-source-dirs:
