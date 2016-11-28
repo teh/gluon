@@ -30,8 +30,7 @@ main = do
   view <- new WebView []
 
   #add win view
-
-  #loadUri view "http://127.0.0.1:8000"
+  #loadHtml view "" Nothing -- necessary otherwise frame is empty
 
   #showAll win
   Gtk.main
