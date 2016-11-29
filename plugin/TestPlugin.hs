@@ -4,8 +4,9 @@
 
 module TestPlugin where
 
-import Protolude hiding (get, set, on) -- (Text, toS, (<>), void, MonadIO, Word64, when, liftIO, traceM, show)
+import Protolude hiding (get, set, on)
 
+import GI.GLib (idleAdd)
 import Foreign.Ptr (Ptr, FunPtr)
 import Foreign.ForeignPtr (ForeignPtr, newForeignPtr_)
 import GI.WebKit2WebExtension
@@ -162,18 +163,20 @@ pageCreated page = do
     -- Somewhat crazily the document only renders correctly if we
     -- modify it in an event handler. I suspect this has to do with
     -- some "refresh" function we need to call but I haven't figured it out yet.
-    void $ dOMEventTargetAddEventListener body "click" (mkEventHandler rm) True
-
-    --patch (newDOMAPI doc) body Nothing (Just (testVNode 10))
+    -- void $ dOMEventTargetAddEventListener body "click" (mkEventHandler rm) True
+    void $ forkOS $ forever $ do
+      threadDelay (1000 * 1000)
+      idleAdd 0 rm -- <-- this is the magic function!
 
       where
-        renderMore :: DOMAPI -> DOMHTMLElement -> MVar (Maybe VNode, Int) -> DOMEvent -> IO ()
-        renderMore api body state _  = do
+        renderMore :: DOMAPI -> DOMHTMLElement -> MVar (Maybe VNode, Int) -> IO Bool
+        renderMore api body state  = do
           (vdom, n) <- takeMVar state
           print n
           let newVDom = Just (testVNode n)
           putMVar state (newVDom, n + 1)
           patch api body vdom newVDom
+          pure False
 
 
 pageCreated_hs :: Ptr () -> Ptr WebPage -> Ptr () -> IO ()
@@ -202,7 +205,6 @@ wrapMouseEventClosure handler _ e = do
   e' <- newForeignPtr_ e
   let event = DOMMouseEvent e'
   handler event
-
 
 foreign import ccall "wrapper" wrapEventClosureC :: EventHandlerCClosure DOMEvent -> IO (FunPtr (EventHandlerCClosure DOMEvent))
 foreign import ccall "wrapper" wrapMouseEventClosureC :: EventHandlerCClosure DOMMouseEvent -> IO (FunPtr (EventHandlerCClosure DOMMouseEvent))
