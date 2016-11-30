@@ -43,6 +43,7 @@ executable plugin
       gi-webkit2
     , gi-webkit2webextension
     , gi-gtk
+    , containers
     , haskell-gi-base
     , protolude
     , gi-gio

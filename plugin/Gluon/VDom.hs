@@ -20,12 +20,14 @@ import GI.WebKit2WebExtension (IsDOMNode, DOMDocument, DOMNode(..), dOMNodeGetCh
                                dOMNodeListItem, dOMNodeRemoveChild, dOMNodeSetTextContent,
                                dOMNodeReplaceChild, dOMNodeAppendChild, dOMDocumentCreateElement,
                                dOMDocumentCreateTextNode, DOMMouseEvent(..), DOMElement, DOMKeyboardEvent(..),
-                               DOMEvent(..), dOMEventTargetAddEventListener, dOMElementSetAttribute)
+                               DOMEvent(..), dOMEventTargetAddEventListener, dOMElementSetAttribute,
+                               IsDOMElement, dOMElementRemoveAttribute, DOMElement(..))
 import Foreign.C.Types (CULong(..))
 import GI.GLib (get, castTo, Closure, newCClosure)
 import System.IO.Unsafe (unsafePerformIO)
 import Foreign.Ptr (Ptr, FunPtr)
 import Foreign.ForeignPtr (newForeignPtr_)
+import qualified Data.Map as Map
 
 type EventHandler = DOMEvent -> IO ()
 type MouseHandler = DOMMouseEvent -> IO ()
@@ -58,6 +60,8 @@ data DOMAPI = DOMAPI
   , appendChild :: forall m a b. (MonadIO m, IsDOMNode a, IsDOMNode b) => a -> b -> m DOMNode
   , replaceChild :: forall c b a m. (IsDOMNode c, IsDOMNode b, IsDOMNode a, MonadIO m) => a -> b -> c -> m DOMNode
   , setTextContent :: forall a m. (IsDOMNode a, MonadIO m) => a -> Text -> m ()
+  , setAttribute :: forall a m. (IsDOMElement a, MonadIO m) => a -> Text -> Text -> m ()
+  , removeAttribute :: forall a m. (IsDOMElement a, MonadIO m) => a -> Text -> m ()
   }
 
 
@@ -83,6 +87,20 @@ safeIx (x:xs) n
   | n == 0 = pure x
   | n < 0 = Nothing
   | otherwise = safeIx xs (n - 1)
+
+-- Adopted from Bodil Stokke's code so it's LGPL3
+updateProps :: forall m el. (MonadIO m, IsDOMElement el) => DOMAPI -> el -> [(Text, Text)] -> [(Text, Text)] -> m ()
+updateProps api me oldProps newProps =
+  sequence_ (update <$> Map.keys (Map.union oldMap newMap))
+  where
+    oldMap = Map.fromList oldProps
+    newMap = Map.fromList newProps
+    update key =
+      case (Map.lookup key oldMap, Map.lookup key newMap) of
+        (Nothing, Just value) -> (setAttribute api) me key value
+        (Just _, Nothing) -> (removeAttribute api) me key
+        (Just prev, Just next) -> when (prev /= next) $ (setAttribute api) me key next
+        (Nothing, Nothing) -> pure ()
 
 -- https://github.com/bodil/purescript-vdom/blob/master/src/Data/VirtualDOM.purs
 -- TODO: record stats about node addition/removal for benchmarking.
@@ -116,10 +134,13 @@ patch api target old new = patchIndexed target old new 0
             n <- (createElement api) new' -- TODO
             void $ (replaceChild api) parent n me
           else do
-            --case (old, new) of
-              --Element {props: oldProps}, Element {props: newProps} ->
-              --  updateProps api me oldProps newProps
-              --_, _ -> pure unit -- TODO props
+            -- TODO: unclear whether this cast can fail. Don't know
+            -- enough about non-DOMElement DOMNodes.
+            Just meEl <- liftIO (castTo DOMElement me)
+            case (old', new') of
+              (Element _ oldProps _ _ , Element _ newProps _ _) ->
+                updateProps api meEl oldProps newProps
+              (_, _) -> pure ()
             walkChildren me old' new'
 
     walkChildren :: forall a2 m2. (IsDOMNode a2, MonadIO m2) =>  a2 -> VNode -> VNode -> m2 ()
@@ -135,6 +156,8 @@ newDOMAPI doc = DOMAPI
   , appendChild = dOMNodeAppendChild
   , replaceChild = dOMNodeReplaceChild
   , setTextContent = dOMNodeSetTextContent
+  , setAttribute = dOMElementSetAttribute
+  , removeAttribute = dOMElementRemoveAttribute
   }
   where
     create :: forall m. (MonadIO m) => VNode -> m DOMNode

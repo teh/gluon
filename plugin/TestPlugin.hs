@@ -21,7 +21,7 @@ testVNode :: Int -> VNode
 testVNode n =
   div_ [onClick testClosure2, GA.style_ "color: red"]
   [ GE.text_ "hello"
-  , GE.button_ [GA.style_ "width: 200px"] [text_ (show n)]
+  , GE.button_ [GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [text_ (show n)]
   ]
 
 event :: Prelude.String -> IO a -> IO a
