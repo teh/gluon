@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, NoImplicitPrelude, OverloadedStrings #-}
 
-module Gluon.VDomNodes
+module Gluon.VDom.Elements
   ( a_
   , abbr_
   , address_

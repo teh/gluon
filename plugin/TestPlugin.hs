@@ -13,7 +13,7 @@ import Foreign.ForeignPtr (ForeignPtr, newForeignPtr_)
 import GI.WebKit2WebExtension
 import Debug.Trace (traceEventIO)
 import Gluon.VDom (VNode, newDOMAPI, DOMAPI, onClick, patch)
-import Gluon.VDomNodes (div_, p_, text_, style_)
+import Gluon.VDom.Elements (div_, p_, text_, style_)
 import qualified Gluon.VDom.Attributes as GA
 
 testVNode :: Int -> VNode
@@ -68,5 +68,4 @@ testClosure2 ev = do
   Just doc <- dOMEventGetSrcElement ev >>= castTo DOMElement
   x <- dOMMouseEventGetClientX ev
   y <- dOMMouseEventGetClientY ev
-  set doc [#innerHtml := ("<h2>Mouse</h2>x: " <> (show x :: Text) <> ", y: " <> (show y :: Text))]
   pure ()
