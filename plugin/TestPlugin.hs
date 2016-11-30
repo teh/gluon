@@ -14,9 +14,10 @@ import GI.WebKit2WebExtension
 import Debug.Trace (traceEventIO)
 import Gluon.VDom (VNode, newDOMAPI, DOMAPI, onClick, patch)
 import Gluon.VDomNodes (div_, p_, text_, style_)
+import qualified Gluon.VDom.Attributes as GA
 
 testVNode :: Int -> VNode
-testVNode n = div_ [onClick testClosure2, style_ "color: red"] (replicate n (text_ "- "))
+testVNode n = div_ [onClick testClosure2, GA.style_ "color: red"] (replicate n (text_ "- "))
 
 event :: Prelude.String -> IO a -> IO a
 event label =
