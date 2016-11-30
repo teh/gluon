@@ -32,7 +32,8 @@ executable plugin
   -- Note that -lHSrts_thr-ghc8.0.1 needs to go here instead of extra-libraries.
   -- Probably fixed by https://github.com/haskell/cabal/pull/4043
   -- (_thr stands for threads)
-  ghc-options: -Wall -dynamic -shared -optc-O -fPIC -lHSrts_thr-ghc8.0.1
+  -- to enable eventlog use `libHSrts_thr_l8.0.1`
+  ghc-options: -Wall -dynamic -shared -optc-O -fPIC -lHSrts_thr_l-ghc8.0.1
   C-sources: plugin/cbits/test.c
   pkgconfig-depends: webkit2gtk-4.0
   hs-source-dirs:
