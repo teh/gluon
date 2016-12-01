@@ -5,23 +5,21 @@
 module TestPlugin where
 
 import qualified Prelude
-import Protolude hiding (get, set, on)
+import Protolude hiding (get, on)
 
 import GI.GLib (idleAdd)
-import Foreign.Ptr (Ptr, FunPtr)
-import Foreign.ForeignPtr (ForeignPtr, newForeignPtr_)
+import Foreign.Ptr (Ptr)
 import GI.WebKit2WebExtension
 import Debug.Trace (traceEventIO)
-import Gluon.VDom (VNode, newDOMAPI, DOMAPI, onClick, patch)
-import Gluon.VDom.Elements (div_, p_, text_, style_)
+import Gluon.VDom (VNode, newDOMAPI, DOMAPI, patch, onClick)
 import qualified Gluon.VDom.Elements as GE
 import qualified Gluon.VDom.Attributes as GA
 
 testVNode :: Int -> VNode
 testVNode n =
-  div_ [onClick testClosure2, GA.style_ "color: red"]
+  GE.div_ [onClick testClosure2, GA.style_ "color: red"]
   [ GE.text_ "hello"
-  , GE.button_ [GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [text_ (show n)]
+  , GE.button_ [GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [GE.text_ (show n)]
   ]
 
 event :: Prelude.String -> IO a -> IO a
@@ -39,11 +37,11 @@ pageCreated page = do
     doc <- webPageGetDomDocument page
     body <- dOMDocumentGetBody doc
     docEl <- dOMDocumentGetDocumentElement doc
-    state <- newMVar (Nothing, 2)
+    state' <- newMVar (Nothing, 2)
 
     -- NB without the forkOS this function never finishes and the
     -- render loop never starts. requires -threaded
-    let rm = renderMore (newDOMAPI doc) body state
+    let rm = renderMore (newDOMAPI doc) body state'
 
     -- Somewhat crazily the document only renders correctly if we
     -- modify it in an event handler. I suspect this has to do with
@@ -55,10 +53,10 @@ pageCreated page = do
 
       where
         renderMore :: DOMAPI -> DOMHTMLElement -> MVar (Maybe VNode, Int) -> IO Bool
-        renderMore api body state  = do
-          (vdom, n) <- takeMVar state
+        renderMore api body state'  = do
+          (vdom, n) <- takeMVar state'
           let newVDom = Just (testVNode n)
-          putMVar state (newVDom, n + 1)
+          putMVar state' (newVDom, n + 1)
           event "P" $ patch api body vdom newVDom
           pure False
 
@@ -73,4 +71,5 @@ testClosure2 ev = do
   Just doc <- dOMEventGetSrcElement ev >>= castTo DOMElement
   x <- dOMMouseEventGetClientX ev
   y <- dOMMouseEventGetClientY ev
+  print (x, y)
   pure ()

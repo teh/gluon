@@ -4,7 +4,6 @@ import Protolude hiding (on, error, get)
 
 import GI.Gtk hiding (main)
 import qualified GI.Gtk as Gtk
-import qualified GI.GLib as GLib
 import GI.WebKit2
 import GI.Gio (memoryInputStreamNewFromData)
 
@@ -23,25 +22,21 @@ main = do
     , #iconName := "applications-haskell"
     ]
 
-  on win #destroy mainQuit
+  void $ on win #destroy mainQuit
   context <- webContextGetDefault
-  on context #initializeWebExtensions $ do
-    print "initializeWebExtensions"
+  void $ on context #initializeWebExtensions $ do
     webContextSetWebExtensionsDirectory context "./ext"
 
-  view <- new WebView []
-
   -- register haskell scheme
-  context <- webContextGetDefault
   webContextRegisterUriScheme context "haskell" $ \request -> do
     path <- uRISchemeRequestGetUri request
     ret <- memoryInputStreamNewFromData "" Nothing
     print path
     uRISchemeRequestFinish request ret 14 (Just "text/html")
 
+  view <- new WebView []
   #add win view
   #loadUri view "haskell://test"
-
 
   #showAll win
 
