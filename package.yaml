@@ -1,0 +1,36 @@
+name: hs-webkit-test
+version: 0.0.1
+
+ghc-options: -Wall
+
+default-extensions:
+  - GeneralizedNewtypeDeriving
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - RecordWildCards
+
+dependencies:
+  - base
+  - gi-webkit2
+  - gi-webkit2webextension
+  - gi-gtk
+  - haskell-gi-base
+  - protolude
+  - gi-glib
+  - gi-gio
+  - gi-javascriptcore
+  - text
+
+executables:
+  web:
+    main: Main.hs
+    source-dirs: web
+
+  plugin:
+    main: TestPlugin.hs
+    ghc-options: -Wall -dynamic -shared -optc-O -fPIC -lHSrts_thr_l-ghc8.0.1
+    c-sources: plugin/cbits/test.c
+    source-dirs: plugin
+    # pkgconfig-depends: webkit2gtk-4.0 # not suppported in hpack, add manually?
+    dependencies:
+      - containers
