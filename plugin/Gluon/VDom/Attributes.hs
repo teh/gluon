@@ -53,7 +53,7 @@ attr_ :: Text -> MakeAttribute
 attr_ k v = Left (k, v)
 
 class_ :: MakeAttribute
-class_ = attr_ "className"
+class_ = attr_ "class"
 
 style_ :: MakeAttribute
 style_ = attr_ "style"

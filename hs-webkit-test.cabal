@@ -12,6 +12,7 @@ executable plugin
   default-language: Haskell2010
   main-is: TestPlugin.hs
   ghc-options: -Wall -Wall -dynamic -shared -optc-O -fPIC -lHSrts_thr_l-ghc8.0.1
+  pkgconfig-depends: webkit2gtk-4.0
   c-sources:
       plugin/cbits/test.c
   hs-source-dirs:
@@ -29,6 +30,7 @@ executable plugin
     , gi-javascriptcore
     , text
     , containers
+    , hsass
   other-modules:
       Gluon.VDom
       Gluon.VDom.Attributes
@@ -51,4 +53,8 @@ executable web
     , gi-gio
     , gi-javascriptcore
     , text
+    , containers
+    , hsass
+    , data-default
+    , bytestring
   default-language: Haskell2010

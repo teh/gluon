@@ -6,7 +6,7 @@ let
 
   f = { mkDerivation, gi-gtk, gi-webkit2, haskell-gi-base, haskell, gi-javascriptcore_4_0_6
   , protolude, stdenv, base, bytestring, containers, gi-atk, gi-cairo, gi-gdk,
-    gi-gio, gi-glib, gi-gobject, gi-soup, text, transformers, callPackage
+    gi-gio, gi-glib, gi-gobject, gi-soup, text, transformers, callPackage, hsass
       }:
   let
     gi-webkit2-fixed = haskell.lib.overrideCabal gi-webkit2 (drv:
@@ -30,6 +30,7 @@ let
         isExecutable = true;
         executableHaskellDepends = [
           gi-gtk gi-webkit2-fixed haskell-gi-base protolude gi-webkit2webextension
+          hsass
         ];
     license = stdenv.lib.licenses.unfree;
     libraryPkgconfigDepends = [ pkgs.webkitgtk ];

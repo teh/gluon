@@ -25,6 +25,11 @@ executables:
   web:
     main: Main.hs
     source-dirs: web
+    dependencies:
+      - containers
+      - hsass
+      - data-default
+      - bytestring
 
   plugin:
     main: TestPlugin.hs

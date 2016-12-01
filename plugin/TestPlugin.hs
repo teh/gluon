@@ -18,7 +18,7 @@ testVNode :: Int -> VNode
 testVNode n =
   GE.div_ [onClick testClosure2, GA.style_ "color: red"]
   [ GE.text_ "hello"
-  , GE.button_ [GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [GE.text_ (show n)]
+  , GE.button_ [GA.class_ "btn", GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [GE.text_ (show n)]
   ]
 
 pageCreated :: WebPage -> IO ()
@@ -38,8 +38,8 @@ pageCreated page = do
     -- modify it in an event handler. I suspect this has to do with
     -- some "refresh" function we need to call but I haven't figured it out yet.
     void $ forkIO $ forever $ do
-      threadDelay (1000 * 10)
-      idleAdd 0 rm -- <-- this is the magic function!
+      idleAdd 0 rm -- <-- idleAdd is the magic function!
+      threadDelay (1000 * 10000)
 
       where
         renderMore :: DOMAPI -> DOMHTMLElement -> MVar (Maybe VNode, Int) -> IO Bool
