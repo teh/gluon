@@ -10,7 +10,6 @@ import Protolude hiding (get, on)
 import GI.GLib (idleAdd)
 import Foreign.Ptr (Ptr)
 import GI.WebKit2WebExtension
-import Debug.Trace (traceEventIO)
 import Gluon.VDom (VNode, newDOMAPI, DOMAPI, patch, onClick)
 import qualified Gluon.VDom.Elements as GE
 import qualified Gluon.VDom.Attributes as GA
@@ -21,12 +20,6 @@ testVNode n =
   [ GE.text_ "hello"
   , GE.button_ [GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [GE.text_ (show n)]
   ]
-
-event :: Prelude.String -> IO a -> IO a
-event label =
-  bracket_ (traceEventIO $ "START " ++ label)
-           (traceEventIO $ "STOP "  ++ label)
-
 
 pageCreated :: WebPage -> IO ()
 pageCreated page = do
@@ -39,15 +32,12 @@ pageCreated page = do
     docEl <- dOMDocumentGetDocumentElement doc
     state' <- newMVar (Nothing, 2)
 
-    -- NB without the forkOS this function never finishes and the
-    -- render loop never starts. requires -threaded
     let rm = renderMore (newDOMAPI doc) body state'
 
     -- Somewhat crazily the document only renders correctly if we
     -- modify it in an event handler. I suspect this has to do with
     -- some "refresh" function we need to call but I haven't figured it out yet.
-    -- void $ dOMEventTargetAddEventListener body "click" (mkEventHandler rm) True
-    void $ forkOS $ forever $ do
+    void $ forkIO $ forever $ do
       threadDelay (1000 * 10)
       idleAdd 0 rm -- <-- this is the magic function!
 
@@ -57,7 +47,7 @@ pageCreated page = do
           (vdom, n) <- takeMVar state'
           let newVDom = Just (testVNode n)
           putMVar state' (newVDom, n + 1)
-          event "P" $ patch api body vdom newVDom
+          patch api body vdom newVDom
           pure False
 
 
