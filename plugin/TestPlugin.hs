@@ -16,9 +16,12 @@ import qualified Gluon.VDom.Attributes as GA
 
 testVNode :: Int -> VNode
 testVNode n =
-  GE.div_ [onClick testClosure2, GA.style_ "color: red"]
-  [ GE.text_ "hello"
-  , GE.button_ [GA.class_ "btn", GA.style_ $ "width: "<>(show (100 + n `mod` 100))<>"px"] [GE.text_ (show n)]
+  GE.div_ [onClick printCoordinates, GA.class_ "container"]
+  [ GE.h1_ [] [GE.text_ "Hello"]
+  , GE.div_ []
+    [ GE.button_ [GA.class_ "btn btn-primary"]
+      [GE.text_ (show n)]
+    ]
   ]
 
 pageCreated :: WebPage -> IO ()
@@ -39,7 +42,7 @@ pageCreated page = do
     -- some "refresh" function we need to call but I haven't figured it out yet.
     void $ forkIO $ forever $ do
       idleAdd 0 rm -- <-- idleAdd is the magic function!
-      threadDelay (1000 * 10000)
+      threadDelay (1000 * 1000)
 
       where
         renderMore :: DOMAPI -> DOMHTMLElement -> MVar (Maybe VNode, Int) -> IO Bool
@@ -56,8 +59,8 @@ pageCreated_hs = webExtensionPageCreatedCallbackWrapper pageCreated
 
 foreign export ccall pageCreated_hs :: WebExtensionPageCreatedCallbackC
 
-testClosure2 :: DOMMouseEvent -> IO ()
-testClosure2 ev = do
+printCoordinates :: DOMMouseEvent -> IO ()
+printCoordinates ev = do
   Just doc <- dOMEventGetSrcElement ev >>= castTo DOMElement
   x <- dOMMouseEventGetClientX ev
   y <- dOMMouseEventGetClientY ev
