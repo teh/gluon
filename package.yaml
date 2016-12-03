@@ -39,3 +39,4 @@ executables:
     # pkgconfig-depends: webkit2gtk-4.0 # not suppported in hpack, add manually?
     dependencies:
       - containers
+      - optparse-generic

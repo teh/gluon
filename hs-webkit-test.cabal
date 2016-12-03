@@ -57,4 +57,5 @@ executable web
     , hsass
     , data-default
     , bytestring
+    , optparse-generic
   default-language: Haskell2010

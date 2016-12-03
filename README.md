@@ -11,3 +11,11 @@ cabal build web
 cabal build plugin && cp dist/build/plugin/plugin ext/test.so
 dist/build/web/web
 ```
+
+# SCSS resources
+
+All scss resources are injected as rendered CSS into `<head>`. Pass them on the command line:
+
+```bash
+dist/build/web/web  --scss /home/tom/src/bootstrap/scss/bootstrap.scss
+```

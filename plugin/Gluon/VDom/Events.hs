@@ -2,7 +2,7 @@ module Gluon.VDom.Events
   ( EventHandler
   , MouseHandler
   , KeyboardHandler
-  , onClick
+  , onclick_
   , addHandler
   , HandlerDescription
   ) where
@@ -34,8 +34,20 @@ instance GS.Show HandlerDescription where
   show (KeyboardHandlerDescription event _) = "KeyboardHandler: " <> (toS event)
   show (GenericHandlerDescription event _) = "GenericHandler: " <> (toS event)
 
-onClick :: MouseHandler -> Either (Text, Text) HandlerDescription
-onClick h = Right (MouseHandlerDescription "click" h)
+-- mouse handlers
+onclick_ :: MouseHandler -> Either (Text, Text) HandlerDescription
+onclick_ h = Right (MouseHandlerDescription "click" h)
+
+onmousedown_ :: MouseHandler -> Either (Text, Text) HandlerDescription
+onmousedown_ h = Right (MouseHandlerDescription "mousedown" h)
+
+onmouseup_ :: MouseHandler -> Either (Text, Text) HandlerDescription
+onmouseup_ h = Right (MouseHandlerDescription "mouseup" h)
+
+onmousemove_ :: MouseHandler -> Either (Text, Text) HandlerDescription
+onmousemove_ h = Right (MouseHandlerDescription "mousemove" h)
+
+
 
 addHandler :: HandlerDescription -> DOMElement -> IO Bool
 addHandler (MouseHandlerDescription event h) el = dOMEventTargetAddEventListener el event (mkMouseHandler h) True

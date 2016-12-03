@@ -37,7 +37,7 @@ renderTodos addTodo TodoState{todos} =
   [ GE.h1_ [] [GE.text_ "TODO example"]
   , GE.div_ []
     [ GE.input_ [GA.type_ "text"] []
-    , GE.button_ [GA.class_ "btn btn-primary", GE.onClick addTodo] [GE.text_ "Add TODO"]
+    , GE.button_ [GA.class_ "btn btn-primary", GE.onclick_ addTodo] [GE.text_ "Add TODO"]
     ]
   , GE.ul_ [] (map renderTodo todos)
   ]

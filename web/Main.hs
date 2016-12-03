@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings, OverloadedLabels, TypeApplications, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric     #-}
+
 
 import Protolude hiding (on, error, get)
 
@@ -11,34 +13,58 @@ import Text.Sass.Compilation (compileFile)
 import Data.Default (def)
 import qualified Data.ByteString as BS
 import System.Environment (getProgName)
+import GHC.Generics (Generic)
+import Options.Generic (ParseRecord, getRecord)
+import System.IO (FilePath)
+import qualified Data.Text as T
 
-mainDoc :: ByteString
-mainDoc = "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"haskell://bootstrap.css\"></head></html>"
+data Config = Config
+  { inspector :: Bool
+  , scss :: [FilePath]
+  , js :: [FilePath]
+  } deriving (Show, Generic)
 
-bootstrap4 :: URISchemeRequest -> IO ()
-bootstrap4 request = do
-  scss <- compileFile "/home/tom/src/bootstrap/scss/bootstrap.scss" def
-  case scss of
-    Left err -> print err
+instance ParseRecord Config
+
+
+renderDoc :: [FilePath] -> ByteString
+renderDoc scssIncludes = "<html><head>" <> (BS.intercalate "" links) <> "</head></html>"
+  where
+    links = map (\path -> "<link rel=\"stylesheet\" type=\"text/css\" href=\"haskell://" <> (toS path :: ByteString) <> "\">") scssIncludes
+
+
+renderSASS :: FilePath -> URISchemeRequest -> IO ()
+renderSASS path request = do
+  errorQuark <- quarkFromString (Just "SCSS compile error")
+  scss' <- compileFile path def
+  case scss' of
+    Left err -> do
+      print err
+      err <- gerrorNew errorQuark 500 ("compile error: " <> (show err))
+      uRISchemeRequestFinishError request err
     Right scssCompiled -> do
       ret <- memoryInputStreamNewFromData scssCompiled Nothing
       uRISchemeRequestFinish request ret (fromIntegral (BS.length scssCompiled)) (Just "text/css")
 
 -- register "haskell://" data provider
-registerHaskellScheme :: WebContext -> IO ()
-registerHaskellScheme context = do
+registerHaskellScheme :: [FilePath] -> WebContext -> IO ()
+registerHaskellScheme scssIncludes context = do
   errorQuark <- quarkFromString (Just "Haskell Scheme Error")
 
   webContextRegisterUriScheme context "haskell" $ \request -> do
     uri <- uRISchemeRequestGetUri request
     case uri of
-      "haskell://bootstrap.css" -> bootstrap4 request
-      "haskell://test" -> do
-        ret <- memoryInputStreamNewFromData mainDoc Nothing
-        uRISchemeRequestFinish request ret (fromIntegral (BS.length mainDoc)) (Just "text/html")
-      notFound -> do
-        err <- gerrorNew errorQuark 404 ("Not found: " <> notFound)
-        uRISchemeRequestFinishError request err
+      "haskell://index.html" -> do
+        let doc = renderDoc scssIncludes
+        ret <- memoryInputStreamNewFromData doc Nothing
+        uRISchemeRequestFinish request ret (fromIntegral (BS.length doc)) (Just "text/html")
+      _ -> do
+        let Just filePath = map toS (T.stripPrefix "haskell://" uri)
+        when (filePath `elem` scssIncludes) (renderSASS filePath request)
+
+        unless (filePath `elem` scssIncludes) $ do
+          err <- gerrorNew errorQuark 404 ("Not found: " <> uri)
+          uRISchemeRequestFinishError request err
 
 -- The long term goal would be to have a `defaultMain` that takes a
 -- config file enumerating the resources. Then running an app will
@@ -47,17 +73,22 @@ main :: IO ()
 main = do
   progName <- getProgName
   args <- getArgs
+  -- TODO not sure how this interacts with gtk args
+  config <- getRecord "Gluon main" :: IO Config
+  print config
 
   _ <- Gtk.init (Just ((toS progName) : (map toS args)))
 
   win <- new Window
     [ #type := WindowTypeToplevel
     , #iconName := "applications-haskell"
+    , #defaultWidth := 800
+    , #defaultHeight := 600
     ]
 
   void $ on win #destroy mainQuit
   context <- webContextGetDefault
-  registerHaskellScheme context
+  registerHaskellScheme (scss config) context
 
   -- Tell webkit library where to look for our plugin code
   void $ on context #initializeWebExtensions $ do
@@ -67,17 +98,15 @@ main = do
   view <- new WebView []
 
   -- enable developer tools which allow us to attach an inspector
-  settings <- webViewGetSettings view
-  settingsSetEnableDeveloperExtras settings True
-  webViewSetSettings view settings
-
-  -- show web inspector after showall. Probably better to tie that to
-  -- a button and/or key combo.
-  -- inspector <- webViewGetInspector view
-  -- webInspectorShow inspector
+  when (inspector config) $ do
+    settings <- webViewGetSettings view
+    settingsSetEnableDeveloperExtras settings True
+    webViewSetSettings view settings
+    inspector <- webViewGetInspector view
+    webInspectorShow inspector
 
   #add win view
-  #loadUri view "haskell://test"
+  #loadUri view "haskell://index.html"
 
   #showAll win
 
