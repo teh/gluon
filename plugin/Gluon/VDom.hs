@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE RankNTypes, NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings, OverloadedLabels #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module Gluon.VDom
   ( VNode(..)
@@ -8,10 +8,6 @@ module Gluon.VDom
   , patch
   , newDOMAPI
   , DOMAPI
-  , MouseHandler
-  , KeyboardHandler
-  , onClick
-  , DOMElementModifier
   ) where
 
 import Protolude hiding (get, on)
@@ -19,31 +15,19 @@ import qualified GHC.Show as GS
 import GI.WebKit2WebExtension (IsDOMNode, DOMDocument, DOMNode(..), dOMNodeGetChildNodes,
                                dOMNodeListItem, dOMNodeRemoveChild, dOMNodeSetTextContent,
                                dOMNodeReplaceChild, dOMNodeAppendChild, dOMDocumentCreateElement,
-                               dOMDocumentCreateTextNode, DOMMouseEvent(..), DOMElement, DOMKeyboardEvent(..),
-                               DOMEvent(..), dOMEventTargetAddEventListener, dOMElementSetAttribute,
+                               dOMDocumentCreateTextNode,
+                               dOMElementSetAttribute,
                                IsDOMElement, dOMElementRemoveAttribute, DOMElement(..))
 import Foreign.C.Types (CULong(..))
-import GI.GLib (get, castTo, Closure, newCClosure)
-import System.IO.Unsafe (unsafePerformIO)
-import Foreign.Ptr (Ptr, FunPtr)
-import Foreign.ForeignPtr (newForeignPtr_)
+import GI.GLib (get, castTo)
 import qualified Data.Map as Map
 
-type EventHandler = DOMEvent -> IO ()
-type MouseHandler = DOMMouseEvent -> IO ()
-type KeyboardHandler = DOMKeyboardEvent -> IO ()
-
--- TODO move DOMElementModifier to an "Internal" module
-type DOMElementModifier = DOMElement -> IO Bool
-
-onClick :: MouseHandler -> Either (Text, Text) DOMElementModifier
-onClick handler = Right (\el -> dOMEventTargetAddEventListener el "click" (mkMouseHandler handler) True)
-
+import Gluon.VDom.Events (HandlerDescription, addHandler)
 
 data VNode = Element
   { tagName :: Text
   , props :: [(Text, Text)]
-  , listeners :: [DOMElementModifier]
+  , listeners :: [HandlerDescription]
   , children :: [VNode]
   }
   | TextNode Text
@@ -166,7 +150,7 @@ newDOMAPI doc = DOMAPI
       Just me <- liftIO (castTo DOMNode meEl)
       -- listeners cannot be removed for now, the only way to remove a
       -- listener is to  remove the element.
-      sequence_ $ map (\addHandler -> liftIO (addHandler meEl)) listeners'
+      sequence_ $ map (\desc -> liftIO (addHandler desc meEl)) listeners'
       sequence_ $ map (\child -> do
                           new'' <- create child
                           dOMNodeAppendChild me new''
@@ -177,32 +161,3 @@ newDOMAPI doc = DOMAPI
       node <- dOMDocumentCreateTextNode doc t
       Just me <- liftIO (castTo DOMNode node)
       pure me
-
-
-
---- Internal stuff
-
-mkMouseHandler :: MouseHandler -> Closure
-mkMouseHandler c = unsafePerformIO $
-  wrapMouseEventClosureC (wrapMouseEventClosure c) >>= newCClosure
-
-mkEventHandler :: EventHandler -> Closure
-mkEventHandler c = unsafePerformIO $
-  wrapEventClosureC (wrapEventClosure c) >>= newCClosure
-
-type EventHandlerCClosure a = Ptr () -> Ptr a -> IO ()
-
-wrapEventClosure :: (DOMEvent -> IO ()) -> EventHandlerCClosure DOMEvent
-wrapEventClosure handler _ e = do
-  e' <- newForeignPtr_ e
-  let event = DOMEvent e'
-  handler event
-
-wrapMouseEventClosure :: (DOMMouseEvent -> IO ()) -> EventHandlerCClosure DOMMouseEvent
-wrapMouseEventClosure handler _ e = do
-  e' <- newForeignPtr_ e
-  let event = DOMMouseEvent e'
-  handler event
-
-foreign import ccall "wrapper" wrapEventClosureC :: EventHandlerCClosure DOMEvent -> IO (FunPtr (EventHandlerCClosure DOMEvent))
-foreign import ccall "wrapper" wrapMouseEventClosureC :: EventHandlerCClosure DOMMouseEvent -> IO (FunPtr (EventHandlerCClosure DOMMouseEvent))

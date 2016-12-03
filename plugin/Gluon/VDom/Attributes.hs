@@ -40,14 +40,14 @@ module Gluon.VDom.Attributes
   ) where
 
 import Protolude hiding (get, on)
-import Gluon.VDom (DOMElementModifier)
+import Gluon.VDom.Events (HandlerDescription)
 
 -- I'm not super surw how many things we want to include here.
 -- https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement
 --
 -- I haven't been terribly systematic, if anything is missing use attr_
 
-type MakeAttribute = Text -> Either (Text, Text) DOMElementModifier
+type MakeAttribute = Text -> Either (Text, Text) HandlerDescription
 
 attr_ :: Text -> MakeAttribute
 attr_ k v = Left (k, v)

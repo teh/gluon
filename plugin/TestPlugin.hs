@@ -10,9 +10,10 @@ import Protolude hiding (get, on)
 import GI.GLib (idleAdd)
 import Foreign.Ptr (Ptr)
 import GI.WebKit2WebExtension
-import Gluon.VDom (VNode, newDOMAPI, DOMAPI, patch, onClick)
+import Gluon.VDom (VNode, newDOMAPI, DOMAPI, patch)
 import qualified Gluon.VDom.Elements as GE
 import qualified Gluon.VDom.Attributes as GA
+import qualified Gluon.VDom.Events as GE
 
 
 data Todo = Todo
@@ -36,7 +37,7 @@ renderTodos addTodo TodoState{todos} =
   [ GE.h1_ [] [GE.text_ "TODO example"]
   , GE.div_ []
     [ GE.input_ [GA.type_ "text"] []
-    , GE.button_ [GA.class_ "btn btn-primary", onClick addTodo] [GE.text_ "Add TODO"]
+    , GE.button_ [GA.class_ "btn btn-primary", GE.onClick addTodo] [GE.text_ "Add TODO"]
     ]
   , GE.ul_ [] (map renderTodo todos)
   ]

@@ -117,9 +117,10 @@ import Protolude hiding (get, set, on)
 import qualified GHC.Show as GS
 import GI.WebKit2WebExtension (IsDOMNode, DOMDocument, DOMNode)
 
-import Gluon.VDom (VNode(..), DOMElementModifier)
+import Gluon.VDom (VNode(..))
+import Gluon.VDom.Events (HandlerDescription)
 
-type MakeNode = [Either (Text, Text) DOMElementModifier] -> [VNode] -> VNode
+type MakeNode = [Either (Text, Text) HandlerDescription] -> [VNode] -> VNode
 
 el_ :: Text -> MakeNode
 el_ tagName mods children = let (props, listeners) = partitionEithers mods in Element tagName props listeners children
