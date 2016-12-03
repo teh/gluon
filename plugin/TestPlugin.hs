@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes, NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings, OverloadedLabels, TypeApplications, ScopedTypeVariables #-}
 
@@ -14,14 +14,31 @@ import Gluon.VDom (VNode, newDOMAPI, DOMAPI, patch, onClick)
 import qualified Gluon.VDom.Elements as GE
 import qualified Gluon.VDom.Attributes as GA
 
-testVNode :: Int -> VNode
-testVNode n =
-  GE.div_ [onClick printCoordinates, GA.class_ "container"]
-  [ GE.h1_ [] [GE.text_ "Hello"]
+
+data Todo = Todo
+  { what :: Text
+  , done :: Bool
+  } deriving (Show, Eq)
+
+data TodoState = TodoState
+  { todos :: [Todo]
+  , vdom :: Maybe VNode
+  }
+
+
+renderTodo :: Todo -> VNode
+renderTodo Todo{what, done} =
+  GE.ol_ (if done then [GA.style_ "text-decoration: strike-through"] else []) [GE.text_ what]
+
+renderTodos :: (DOMMouseEvent -> IO ()) -> TodoState -> VNode
+renderTodos addTodo TodoState{todos} =
+  GE.div_ [GA.class_ "container"]
+  [ GE.h1_ [] [GE.text_ "TODO example"]
   , GE.div_ []
-    [ GE.button_ [GA.class_ "btn btn-primary"]
-      [GE.text_ (show n)]
+    [ GE.input_ [GA.type_ "text"] []
+    , GE.button_ [GA.class_ "btn btn-primary", onClick addTodo] [GE.text_ "Add TODO"]
     ]
+  , GE.ul_ [] (map renderTodo todos)
   ]
 
 pageCreated :: WebPage -> IO ()
@@ -32,37 +49,28 @@ pageCreated page = do
     get page #uri >>= print
     doc <- webPageGetDomDocument page
     body <- dOMDocumentGetBody doc
-    docEl <- dOMDocumentGetDocumentElement doc
-    state' <- newMVar (Nothing, 2)
 
-    let rm = renderMore (newDOMAPI doc) body state'
+    let api = newDOMAPI doc
+    state' <- newMVar (TodoState [] Nothing)
 
-    -- Somewhat crazily the document only renders correctly if we
-    -- modify it in an event handler. I suspect this has to do with
-    -- some "refresh" function we need to call but I haven't figured it out yet.
-    void $ forkIO $ forever $ do
-      idleAdd 0 rm -- <-- idleAdd is the magic function!
-      threadDelay (1000 * 1000)
+    -- There's some knot-tying going on here because handlers modify the MVar
+    -- state. They should actually modify just the state but that's for a higher
+    -- level library to fix.
+    let addTodoHandler = addTodo api body state'
+    let vdom = renderTodos addTodoHandler (TodoState [] Nothing)
+    patch api body Nothing (Just vdom)
+    modifyMVar_ state' (\_ -> pure (TodoState [] (Just vdom)))
 
       where
-        renderMore :: DOMAPI -> DOMHTMLElement -> MVar (Maybe VNode, Int) -> IO Bool
-        renderMore api body state'  = do
-          (vdom, n) <- takeMVar state'
-          let newVDom = Just (testVNode n)
-          putMVar state' (newVDom, n + 1)
-          patch api body vdom newVDom
-          pure False
-
+        addTodo :: DOMAPI -> DOMHTMLElement -> MVar TodoState -> DOMMouseEvent -> IO ()
+        addTodo api body state' _ = do
+          s <- takeMVar state'
+          let s' = s { todos = (Todo "hello" False):(todos s) }
+          let newVDom = Just (renderTodos (addTodo api body state') s')
+          putMVar state' (s' { vdom = newVDom })
+          void $ patch api body (vdom s) newVDom
 
 pageCreated_hs :: Ptr () -> Ptr WebPage -> Ptr () -> IO ()
 pageCreated_hs = webExtensionPageCreatedCallbackWrapper pageCreated
 
 foreign export ccall pageCreated_hs :: WebExtensionPageCreatedCallbackC
-
-printCoordinates :: DOMMouseEvent -> IO ()
-printCoordinates ev = do
-  Just doc <- dOMEventGetSrcElement ev >>= castTo DOMElement
-  x <- dOMMouseEventGetClientX ev
-  y <- dOMMouseEventGetClientY ev
-  print (x, y)
-  pure ()

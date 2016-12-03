@@ -40,6 +40,9 @@ registerHaskellScheme context = do
         err <- gerrorNew errorQuark 404 ("Not found: " <> notFound)
         uRISchemeRequestFinishError request err
 
+-- The long term goal would be to have a `defaultMain` that takes a
+-- config file enumerating the resources. Then running an app will
+-- only require the "plugin" binary. Similar to electron.
 main :: IO ()
 main = do
   progName <- getProgName
