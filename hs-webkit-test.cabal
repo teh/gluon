@@ -36,10 +36,10 @@ executable plugin
       Gluon.VDom.Attributes
       Gluon.VDom.Elements
 
-executable web
+executable gluon
   main-is: Main.hs
   hs-source-dirs:
-      web
+      gluon
   default-extensions: GeneralizedNewtypeDeriving NoImplicitPrelude OverloadedStrings RecordWildCards
   ghc-options: -Wall
   build-depends:

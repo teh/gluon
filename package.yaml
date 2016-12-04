@@ -22,9 +22,9 @@ dependencies:
   - text
 
 executables:
-  web:
+  gluon:
     main: Main.hs
-    source-dirs: web
+    source-dirs: gluon
     dependencies:
       - containers
       - hsass
