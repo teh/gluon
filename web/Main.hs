@@ -98,7 +98,7 @@ main = do
   withSystemTempDirectory "ext" $ \tmpPath -> do
 
     -- .so extension seems to be necessary
-    copyFile (plugin config) (tmpPath <> "/" <> (SF.takeFileName (plugin config)) <> ".so")
+    copyFile (plugin config) (tmpPath SF.</> (SF.takeFileName (plugin config)) SF.<.> ".so")
 
     -- Tell webkit library where to look for our plugin code
     void $ on context #initializeWebExtensions $ do
