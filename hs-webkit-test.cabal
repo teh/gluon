@@ -58,4 +58,7 @@ executable web
     , data-default
     , bytestring
     , optparse-generic
+    , temporary
+    , directory
+    , filepath
   default-language: Haskell2010

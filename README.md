@@ -8,8 +8,8 @@ This code does *not* run a webserver. It uses the GObject introspection API to a
 git clone https://github.com/teh/haskell-webkit2gtk
 nix-shell  # stackage: not tried yet if anyone wants to pick that up
 cabal build web
-cabal build plugin && cp dist/build/plugin/plugin ext/test.so
-dist/build/web/web
+cabal build plugin
+dist/build/web/web --plugin dist/build/plugin/plugin
 ```
 
 # SCSS resources

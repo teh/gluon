@@ -1,6 +1,5 @@
-{-# LANGUAGE OverloadedStrings, OverloadedLabels, TypeApplications, ScopedTypeVariables #-}
-{-# LANGUAGE DeriveGeneric     #-}
-
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 import Protolude hiding (on, error, get)
 
@@ -17,11 +16,14 @@ import GHC.Generics (Generic)
 import Options.Generic (ParseRecord, getRecord)
 import System.IO (FilePath)
 import qualified Data.Text as T
+import System.IO.Temp (withSystemTempDirectory)
+import System.Directory (copyFile)
+import qualified System.FilePath as SF
 
 data Config = Config
   { inspector :: Bool
   , scss :: [FilePath]
-  , js :: [FilePath]
+  , plugin :: FilePath
   } deriving (Show, Generic)
 
 instance ParseRecord Config
@@ -40,8 +42,8 @@ renderSASS path request = do
   case scss' of
     Left err -> do
       print err
-      err <- gerrorNew errorQuark 500 ("compile error: " <> (show err))
-      uRISchemeRequestFinishError request err
+      gerr <- gerrorNew errorQuark 500 ("compile error: " <> (show err))
+      uRISchemeRequestFinishError request gerr
     Right scssCompiled -> do
       ret <- memoryInputStreamNewFromData scssCompiled Nothing
       uRISchemeRequestFinish request ret (fromIntegral (BS.length scssCompiled)) (Just "text/css")
@@ -65,6 +67,7 @@ registerHaskellScheme scssIncludes context = do
         unless (filePath `elem` scssIncludes) $ do
           err <- gerrorNew errorQuark 404 ("Not found: " <> uri)
           uRISchemeRequestFinishError request err
+
 
 -- The long term goal would be to have a `defaultMain` that takes a
 -- config file enumerating the resources. Then running an app will
@@ -90,25 +93,33 @@ main = do
   context <- webContextGetDefault
   registerHaskellScheme (scss config) context
 
-  -- Tell webkit library where to look for our plugin code
-  void $ on context #initializeWebExtensions $ do
-    webContextSetWebExtensionsDirectory context "./ext"
+  -- We copy the plugin into a temporary directory and tell webkit
+  -- that our extension lives there
+  withSystemTempDirectory "ext" $ \tmpPath -> do
 
-  -- view needs to be created *after* registering haskell scheme.
-  view <- new WebView []
+    -- .so extension seems to be necessary
+    copyFile (plugin config) (tmpPath <> "/" <> (SF.takeFileName (plugin config)) <> ".so")
 
-  -- enable developer tools which allow us to attach an inspector
-  when (inspector config) $ do
-    settings <- webViewGetSettings view
-    settingsSetEnableDeveloperExtras settings True
-    webViewSetSettings view settings
-    inspector <- webViewGetInspector view
-    webInspectorShow inspector
+    -- Tell webkit library where to look for our plugin code
+    void $ on context #initializeWebExtensions $ do
+      webContextSetWebExtensionsDirectory context (toS tmpPath)
 
-  #add win view
-  #loadUri view "haskell://index.html"
+    -- view needs to be created *after* registering haskell scheme.
+    view <- new WebView []
 
-  #showAll win
+    -- enable developer tools which allow us to attach an inspector
+    when (inspector config) $ do
+      settings <- webViewGetSettings view
+      settingsSetEnableDeveloperExtras settings True
+      webViewSetSettings view settings
+      inspector <- webViewGetInspector view
+      webInspectorShow inspector
 
 
-  Gtk.main
+    #add win view
+    #loadUri view "haskell://index.html"
+
+    #showAll win
+
+
+    Gtk.main

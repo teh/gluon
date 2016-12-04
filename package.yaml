@@ -40,3 +40,6 @@ executables:
     dependencies:
       - containers
       - optparse-generic
+      - temporary
+      - directory
+      - filepath

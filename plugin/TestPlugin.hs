@@ -33,7 +33,7 @@ renderTodo Todo{what, done} =
 
 renderTodos :: (DOMMouseEvent -> IO ()) -> TodoState -> VNode
 renderTodos addTodo TodoState{todos} =
-  GE.div_ [GA.class_ "container"]
+  GE.div_ [GA.class_ "container-fluid"]
   [ GE.h1_ [] [GE.text_ "TODO example"]
   , GE.div_ []
     [ GE.input_ [GA.type_ "text"] []
