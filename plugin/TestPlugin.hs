@@ -29,7 +29,7 @@ data TodoState = TodoState
 
 renderTodo :: Todo -> VNode
 renderTodo Todo{what, done} =
-  GE.ol_ (if done then [GA.style_ "text-decoration: strike-through"] else []) [GE.text_ what]
+  GE.ol_ [GA.class_ "list-group-item", GA.style_ (if done then "text-decoration: strike-through" else "")] [GE.text_ what]
 
 renderTodos :: (DOMMouseEvent -> IO ()) -> TodoState -> VNode
 renderTodos addTodo TodoState{todos} =
@@ -39,7 +39,7 @@ renderTodos addTodo TodoState{todos} =
     [ GE.input_ [GA.type_ "text"] []
     , GE.button_ [GA.class_ "btn btn-primary", GE.onclick_ addTodo] [GE.text_ "Add TODO"]
     ]
-  , GE.ul_ [] (map renderTodo todos)
+  , GE.ul_ [GA.class_ "list-group"] (map renderTodo todos)
   ]
 
 pageCreated :: WebPage -> IO ()
