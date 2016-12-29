@@ -1,3 +1,7 @@
+**N.B.:** This is one of those projects where you need to read the instructions, a simple `cabal run` won't work, apologies!
+
+# What
+
 This project demonstrates how to write a HTML application in Haskell via the webkit2 embedding API.
 
 This code does *not* run a webserver. It uses the GObject introspection API to access the DOM directly.

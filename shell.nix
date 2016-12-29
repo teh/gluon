@@ -24,7 +24,7 @@ let
       webkit2gtk = null;
     };
     in mkDerivation {
-        pname = "hs-webkit-test";
+        pname = "gluon";
         version = "0.0.1";
         src = ./.;
         isLibrary = false;
